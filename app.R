@@ -53,7 +53,7 @@ ui <- fluidPage(
     )
   )
 )
-
+ 
 # Define Server
 server <- function(input, output) {
   # Calculate Phase 1EN 2018 k3
