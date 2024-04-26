@@ -1,7 +1,7 @@
 library(shiny)
 library(OHcomplianceStrategies)
 
-# Define UI
+# Define UI 
 ui <- fluidPage(
   titlePanel("ShinyApp for compliance strategies application to test workers exposure to chemical agent(s) with the Occupational Exposure Limit (OEL)"),
   
