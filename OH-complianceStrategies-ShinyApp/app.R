@@ -1,6 +1,3 @@
-library(shiny)
-library(OHcomplianceStrategies)s
- 
 # Define UI 
 ui <- fluidPage(
   titlePanel("ShinyApp for compliance strategies application to test workers exposure to chemical agent(s) with the Occupational Exposure Limit (OEL)"),
@@ -53,7 +50,7 @@ ui <- fluidPage(
     )
   )
 )
- 
+
 # Define Server
 server <- function(input, output) {
   # Calculate Phase 1EN 2018 k3
