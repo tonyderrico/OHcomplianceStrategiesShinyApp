@@ -1,5 +1,5 @@
 library(shiny)
-library("OHcomplianceStrategies-master")
+library(OHcomplianceStrategies)
 library(htmltools)
 library(shinyuieditor)
 library(shinythemes)
