@@ -1,0 +1,12 @@
+name: complianceStrategiesShinyApp
+title: complianceStrategiesShinyApp
+username: antonioderrico
+account: antonioderrico
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11891835
+bundleId:
+url: https://antonioderrico.shinyapps.io/complianceStrategiesShinyApp/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
