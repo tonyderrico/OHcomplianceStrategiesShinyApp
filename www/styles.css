@@ -1,4 +1,6 @@
-.image-wrapper {
-  float: left; /* Align image to the left */
-  margin-right: 20px; /* Add some space to the right of the image */
+/* styles.css */
+
+/* Apply background color to the sidebar panel */
+.sidebar {
+  background-color: #7FFFD4;
 }

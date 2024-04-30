@@ -5,6 +5,8 @@ library(shinyuieditor)
 library(shinythemes)
 library('tolerance')
 library('ggplot2')
+library(lme4)
+library(dplyr)
 
 # Define UI 
 ui <- fluidPage( 
@@ -15,16 +17,18 @@ ui <- fluidPage(
   ),
   
   #APP start
-  
+  img(src = "uulogo.png", height = "100px", width = "100px", align="right"),
   titlePanel("ShinyApp for compliance strategies application to test workers exposure to chemical agent(s) with the Occupational Exposure Limit (OEL)"),
+  
   
   tabsetPanel(
     # Home Page
     tabPanel("Home",
-             h2("Welcome to the OH Compliance Strategies App!"),
-             p("This app helps you assessing compliance strategies for testing workers' exposure to chemical agents against the Occupational Exposure Limit (OEL)."),
-             p("Use the tabs above to navigate to different sections and perform compliance calculations."),
-             p("Get started by selecting one of the options from the tabs above.")
+             h1("Welcome to the OH Compliance Strategies App!"),
+             h4("This app helps you assessing compliance strategies for testing workers' exposure to airborne substances with the Occupational Exposure Limit (OEL)."),
+             h4("Use the tabs above to navigate to different tests and perform compliance calculations of your exposure data. Based on the number of measurements you have carried out within SEGs (Similar Exposure Groups), you can select the appropriate test"),
+             h3("Below you can find the table with the compliance strategies included in the App carried out through the 'OHcomplianceStrategies' package [https://github.com/tonyderrico/OHcomplianceStrategies]"),
+             img(src = "table_1.jpg", height = "1300px", width = "60%")
     ),
     # Section for Phase 1EN 2018 k3 Calculation
     tabPanel("EN689 Preliminary Test with k = 3",
@@ -81,12 +85,12 @@ ui <- fluidPage(
     ),
     
     # Section for Phase 2 UTL Calculation
-    tabPanel("EN689 Phase 2 Upper Tolerance Limit (UTL) Calculation",
+    tabPanel("EN689 Phase 2: Upper Tolerance Limit (UTL) Calculation",
              sidebarLayout(
                sidebarPanel(
                  column(width = 12,
                         numericInput("OEL_phase2_UTL", "Occupational Exposure Limit:", value = 1),
-                        fileInput("samples_phase2_UTL", "Upload CSV file with Workers Exposure Concentration"),
+                        fileInput("samples_phase2_UTL", "Upload CSV file with workers exposure concentration"),
                         actionButton("calculate_phase2_UTL", "Calculate Compliance")
                  ),
                  column(width = 8,
@@ -99,15 +103,36 @@ ui <- fluidPage(
                  plotOutput("density_plot")
                )
              )
+    ),
+   
+     # Tab panel for Phase 3 BoHS.NvVA Calculation
+    tabPanel("BoHS.NvVA Phase 3: Individual Compliance",
+             sidebarLayout(
+               sidebarPanel(
+                 column(width = 12,
+             numericInput("OEL_individual", "Occupational Exposure Limit:", value = 1),
+             fileInput("data_individual", "Upload CSV file with information on workers IDs (with repeated measurements) and their exposure concentrations"),
+             actionButton("calculate_individual", "Calculate Compliance")),
+             column(width = 8,
+                    h4("Dataset Example in csv"),  # Title for the image
+                    img(src = "exampledf_IC.jpg", height = "300px", width = "50%"))
+             ),
+             mainPanel(
+             textOutput("individual_result"),
+             dataTableOutput("analysis_table"),
+             plotOutput("density_plot")
     )
-    
+  )
+)
     
   )
 )
 
+
 #----------------------------------------------------------------------------------------------------
 # Define Server
 server <- function(input, output) {
+  
   # Calculate Phase 1EN 2018 k3
   observeEvent(input$calculate_phase1EN2018_k3, {
     samples <- c(input$measurement1_phase1EN2018_k3, 
@@ -187,9 +212,72 @@ server <- function(input, output) {
         theme_minimal()
     })
   })
+  
+  #phase 3 calculation INDIVIDUAL COMPLIANCE
+  
+  observeEvent(input$calculate_individual, {
+    # Check if data is uploaded and not empty
+    if (is.null(input$data_individual) || is.null(input$data_individual$datapath)) {
+      return(NULL)
+    }
+    
+    # Read the uploaded CSV file
+    df <- read.csv(input$data_individual$datapath, sep = ";")
+    df <- data.frame(df)
+    
+    # Call the Individual_Compliance function with uploaded data and specified exposure limit
+    compliance_result <- Individual_Compliance(
+      seg = df, 
+      workers = df$workers, 
+      samples = df$samples, 
+      OEL = input$OEL_individual
+    )
+    
+    # Calculate necessary parameters
+    M1 <- mean(df$samples)
+    t <- lmer(samples ~ 1 + (1 | workers), data = df)
+    VCrandom <- VarCorr(t)
+    vv <- as.data.frame(VCrandom)
+    wwsd <- sqrt(vv$vcov[2])
+    bwsd <- sqrt(vv$vcov[1])
+    H <- (log(input$OEL_individual) - (M1 + 1.645 * wwsd)) / bwsd
+    IE <- 1 - pnorm(H)
+    
+    M1 <- formatC(M1, format = "f", digits = 2) # Format M1 with 2 decimal places
+    wwsd <- formatC(wwsd, format = "f", digits = 2) # Format wwsd with 2 decimal places
+    bwsd <- formatC(bwsd, format = "f", digits = 2) # Format bwsd with 2 decimal places
+    H <- formatC(H, format = "f", digits = 2) # Format H with 2 decimal places
+    IE <- formatC(IE, format = "f", digits = 2) # Format IE with 2 decimal places
+    
+    #DENSITY FUNCTIONS
+    output$density_plot <- renderPlot({
+      ggplot(data = df, aes(x = log(samples))) +
+        geom_density(fill = "skyblue", color = "blue") +
+        geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
+        labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
+        theme_minimal()
+    })
+    
+    # Render the table with analysis summary
+    output$analysis_table <- renderDataTable({
+      # Create a data frame with the results
+      analysis_summary <- data.frame(
+        "Parameter" = c("Overall Mean of SEG", 
+                        "Within-Worker Variance", 
+                        "Between-Worker Variance",
+                        "Probability of Exceedance (IE)",
+                        "Compliance Result"),
+        "Value" = c(M1, wwsd, bwsd, IE, compliance_result)
+      )
+      
+      # Return the data frame
+      data.frame(analysis_summary)
+    })
+  })
+  
+
 }
 
 
 # Run the Shiny app
 shinyApp(ui, server)
-
