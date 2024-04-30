@@ -1,0 +1,4 @@
+.image-wrapper {
+  float: left; /* Align image to the left */
+  margin-right: 20px; /* Add some space to the right of the image */
+}

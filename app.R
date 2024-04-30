@@ -3,6 +3,8 @@ library(OHcomplianceStrategies)
 library(htmltools)
 library(shinyuieditor)
 library(shinythemes)
+library('tolerance')
+library('ggplot2')
 
 # Define UI 
 ui <- fluidPage( 
@@ -76,7 +78,30 @@ ui <- fluidPage(
                  plotOutput("boxplot_k5")
                )
              )
+    ),
+    
+    # Section for Phase 2 UTL Calculation
+    tabPanel("EN689 Phase 2 Upper Tolerance Limit (UTL) Calculation",
+             sidebarLayout(
+               sidebarPanel(
+                 column(width = 12,
+                        numericInput("OEL_phase2_UTL", "Occupational Exposure Limit:", value = 1),
+                        fileInput("samples_phase2_UTL", "Upload CSV file with Workers Exposure Concentration"),
+                        actionButton("calculate_phase2_UTL", "Calculate Compliance")
+                 ),
+                 column(width = 8,
+                        h4("Dataset Example in csv"),  # Title for the image
+                        img(src = "exampledf.jpg", height = "300px", width = "50%")
+                 )
+               ),
+               mainPanel(
+                 textOutput("phase2_UTL_result"),
+                 plotOutput("density_plot")
+               )
+             )
     )
+    
+    
   )
 )
 
@@ -137,6 +162,29 @@ server <- function(input, output) {
                    ylim = c(0, max(samples) * 1.2))
       abline(h = input$OEL_phase1EN2018_k3, col = "red")
       bp
+    })
+  })
+  
+  # Phase 2 UTL calculation
+  observeEvent(input$calculate_phase2_UTL, {
+    req(input$samples_phase2_UTL)
+    df <- read.csv(input$samples_phase2_UTL$datapath, sep = ";")
+    
+    df <- data.frame(df)
+    df$samples = as.numeric(df$samples)
+
+    result <- phase2_UTL(df$samples, input$OEL_phase2_UTL)
+    
+    output$phase2_UTL_result <- renderText({
+      paste("Result:", result)
+    })
+    
+    output$density_plot <- renderPlot({
+      ggplot(df, aes(x = log(samples))) +
+        geom_density(fill = "skyblue", color = "blue") +
+        geom_vline(xintercept = log(input$OEL_phase2_UTL), color = "red", linetype = "dashed", size = 1) +
+        labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
+        theme_minimal()
     })
   })
 }
