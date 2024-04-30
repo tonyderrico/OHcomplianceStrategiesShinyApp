@@ -100,7 +100,7 @@ ui <- fluidPage(
                ),
                mainPanel(
                  textOutput("phase2_UTL_result"),
-                 plotOutput("density_plot")
+                 plotOutput("density_plot1")
                )
              )
     ),
@@ -120,7 +120,7 @@ ui <- fluidPage(
              mainPanel(
              textOutput("individual_result"),
              dataTableOutput("analysis_table"),
-             plotOutput("density_plot")
+             plotOutput("density_plot2")
     )
   )
 )
@@ -204,7 +204,7 @@ server <- function(input, output) {
       paste("Result:", result)
     })
     
-    output$density_plot <- renderPlot({
+    output$density_plot1 <- renderPlot({
       ggplot(df, aes(x = log(samples))) +
         geom_density(fill = "skyblue", color = "blue") +
         geom_vline(xintercept = log(input$OEL_phase2_UTL), color = "red", linetype = "dashed", size = 1) +
@@ -250,7 +250,7 @@ server <- function(input, output) {
     IE <- formatC(IE, format = "f", digits = 2) # Format IE with 2 decimal places
     
     #DENSITY FUNCTIONS
-    output$density_plot <- renderPlot({
+    output$density_plot2 <- renderPlot({
       ggplot(data = df, aes(x = log(samples))) +
         geom_density(fill = "skyblue", color = "blue") +
         geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
