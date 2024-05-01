@@ -175,6 +175,7 @@ server <- function(input, output) {
       bp <- boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
                     ylim = c(0, max(samples) * 1.2))
       abline(h = input$OEL_phase1EN2018_k3, col = "red")
+      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")
       bp
     })
   })
@@ -220,6 +221,7 @@ server <- function(input, output) {
       bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
                    ylim = c(0, max(samples) * 1.2))
       abline(h = input$OEL_phase1EN2018_k3, col = "red")
+      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")
       bp
     })
   })
@@ -265,6 +267,7 @@ server <- function(input, output) {
       bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
                    ylim = c(0, max(samples) * 1.2))
       abline(h = input$OEL_phase1EN2018_k3, col = "red")
+      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")  # Add 'OEL' label
       bp
     })
   })
@@ -315,6 +318,7 @@ server <- function(input, output) {
       ggplot(df, aes(x = log(samples))) +
         geom_density(fill = "skyblue", color = "blue") +
         geom_vline(xintercept = log(input$OEL_phase2_UTL), color = "red", linetype = "dashed", size = 1) +
+        annotate("text", x = log(input$OEL_phase2_UTL)-0.15, y = 0.9, label = "OEL", color = "red", size = 8) +
         labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
         theme_minimal()
     })
@@ -361,6 +365,7 @@ server <- function(input, output) {
       ggplot(data = df, aes(x = log(samples))) +
         geom_density(fill = "skyblue", color = "blue") +
         geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
+        annotate("text", x = log(input$OEL_individual)-0.15, y = 0.9, label = "OEL", color = "red", size = 8) +
         labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
         theme_minimal()
     })
