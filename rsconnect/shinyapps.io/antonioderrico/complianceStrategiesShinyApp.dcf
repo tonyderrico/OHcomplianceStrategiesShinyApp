@@ -5,7 +5,7 @@ account: antonioderrico
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11891835
-bundleId: 8564371
+bundleId: 8564448
 url: https://antonioderrico.shinyapps.io/complianceStrategiesShinyApp/
 version: 1
 asMultiple: FALSE
