@@ -41,7 +41,7 @@ ui <- fluidPage(
                  actionButton("calculate_phase1EN2018_k3", "Calculate Exposure Compliance (k = 3)")
                ),
                mainPanel(
-                 textOutput("phase1EN2018_k3_result"),
+                 tableOutput("descriptive_tablek3"),
                  plotOutput("boxplot_k3")
                ) 
              )
@@ -59,7 +59,7 @@ ui <- fluidPage(
                  actionButton("calculate_phase1EN2018_k4", "Calculate Exposure Compliance (k = 4)")
                ),
                mainPanel(
-                 textOutput("phase1EN2018_k4_result"),
+                 tableOutput("descriptive_tablek4"),
                  plotOutput("boxplot_k4")
                )
              )
@@ -78,7 +78,7 @@ ui <- fluidPage(
                  actionButton("calculate_phase1EN2018_k5", "Calculate Exposure Compliance (k = 5)")
                ),
                mainPanel(
-                 textOutput("phase1EN2018_k5_result"),
+                 tableOutput("descriptive_tablek5"),
                  plotOutput("boxplot_k5")
                )
              )
@@ -99,7 +99,7 @@ ui <- fluidPage(
                  )
                ),
                mainPanel(
-                 textOutput("phase2_UTL_result"),
+                 tableOutput("descriptive_tableUTL"),
                  plotOutput("density_plot1")
                )
              )
@@ -138,14 +138,42 @@ server <- function(input, output) {
     samples <- c(input$measurement1_phase1EN2018_k3, 
                  input$measurement2_phase1EN2018_k3,
                  input$measurement3_phase1EN2018_k3)
+    
+    # Calculate descriptive statistics
+    mean_val <- mean(samples)
+    sd_val <- sd(samples)
+    geo_mean <- exp(mean(log(samples))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(samples))) # Calculate geometric standard deviation
+    variance_val <- var(samples)
+    median_val <- median(samples)
     compliance <- phase1EN2018_k3(samples, OEL = input$OEL_phase1EN2018_k3)
-    output$phase1EN2018_k3_result <- renderText({
-      paste("Compliance result", compliance)
-    })
+    
+    # Create a data frame for descriptive statistics
+    stats_dfk3 <- data.frame(
+      Parameters = c("Compliance Result", "Median","Mean", "Standard Deviation", "Geometric Mean", 
+                    "Geometric Standard Deviation", "Variance"),
+      Value = c(compliance, median_val,mean_val, sd_val, geo_mean, geo_sd, variance_val)
+    )
+    
+    # Round numeric values to two decimal places
+    stats_dfk3$Value <- ifelse(grepl("^\\d+\\.\\d+$", stats_dfk3$Value),
+                               format(round(as.numeric(stats_dfk3$Value), 2), nsmall = 2),
+                               stats_dfk3$Value)
+
+    
+    # Render table
+    output$descriptive_tablek3 <- renderTable({
+      stats_dfk3 <- stats_dfk3  # Ensure stats_dfk3 is available in the local environment
+      stats_dfk3  # Return the data frame
+    }, rownames = FALSE)
+    
+
+    
+    #render boxplot
     output$boxplot_k3 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:3), Agent = samples)
-      bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
-                   ylim = c(0, max(samples) * 1.2))
+      bp <- boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
+                    ylim = c(0, max(samples) * 1.2))
       abline(h = input$OEL_phase1EN2018_k3, col = "red")
       bp
     })
@@ -157,10 +185,36 @@ server <- function(input, output) {
                  input$measurement2_phase1EN2018_k4,
                  input$measurement3_phase1EN2018_k4,
                  input$measurement4_phase1EN2018_k4)
+    
+    # Calculate descriptive statistics
+    mean_val <- mean(samples)
+    sd_val <- sd(samples)
+    geo_mean <- exp(mean(log(samples))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(samples))) # Calculate geometric standard deviation
+    variance_val <- var(samples)
+    median_val <- median(samples)
     compliance <- phase1EN2018_k4(samples, OEL = input$OEL_phase1EN2018_k4)
-    output$phase1EN2018_k4_result <- renderText({
-      paste("Compliance result:", compliance)
-    })
+    
+    # Create a data frame for descriptive statistics
+    stats_dfk4 <- data.frame(
+      Parameters = c("Compliance Result", "Median","Mean", "Standard Deviation", "Geometric Mean", 
+                     "Geometric Standard Deviation", "Variance"),
+      Value = c(compliance, median_val,mean_val, sd_val, geo_mean, geo_sd, variance_val)
+    )
+    
+    # Round numeric values to two decimal places
+    stats_dfk4$Value <- ifelse(grepl("^\\d+\\.\\d+$", stats_dfk4$Value),
+                               format(round(as.numeric(stats_dfk4$Value), 2), nsmall = 2),
+                               stats_dfk4$Value)
+    
+    
+    # Render table
+    output$descriptive_tablek4 <- renderTable({
+      stats_dfk4 <- stats_dfk4  # Ensure stats_dfk4 is available in the local environment
+      stats_dfk4  # Return the data frame
+    }, rownames = FALSE)
+    
+    
     output$boxplot_k4 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:4), Agent = samples)
       bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
@@ -177,10 +231,35 @@ server <- function(input, output) {
                  input$measurement3_phase1EN2018_k5,
                  input$measurement4_phase1EN2018_k5,
                  input$measurement5_phase1EN2018_k5)
+    # Calculate descriptive statistics
+    mean_val <- mean(samples)
+    sd_val <- sd(samples)
+    geo_mean <- exp(mean(log(samples))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(samples))) # Calculate geometric standard deviation
+    variance_val <- var(samples)
+    median_val <- median(samples)
     compliance <- phase1EN2018_k5(samples, OEL = input$OEL_phase1EN2018_k5)
-    output$phase1EN2018_k5_result <- renderText({
-      paste("Compliance result:", compliance)
-    })
+    
+    # Create a data frame for descriptive statistics
+    stats_dfk5 <- data.frame(
+      Parameters = c("Compliance Result", "Median","Mean", "Standard Deviation", "Geometric Mean", 
+                     "Geometric Standard Deviation", "Variance"),
+      Value = c(compliance, median_val,mean_val, sd_val, geo_mean, geo_sd, variance_val)
+    )
+    
+    # Round numeric values to two decimal places
+    stats_dfk5$Value <- ifelse(grepl("^\\d+\\.\\d+$", stats_dfk5$Value),
+                               format(round(as.numeric(stats_dfk5$Value), 2), nsmall = 2),
+                               stats_dfk5$Value)
+    
+    
+    # Render table
+    output$descriptive_tablek5 <- renderTable({
+      stats_dfk5 <- stats_dfk5  # Ensure stats_dfk5 is available in the local environment
+      stats_dfk5  # Return the data frame
+    }, rownames = FALSE)
+    
+    #renderboxplot
     output$boxplot_k5 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:5), Agent = samples)
       bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
@@ -200,9 +279,37 @@ server <- function(input, output) {
 
     result <- phase2_UTL(df$samples, input$OEL_phase2_UTL)
     
-    output$phase2_UTL_result <- renderText({
-      paste("Result:", result)
-    })
+    # Calculate descriptive statistics
+    mean_val <- mean(df$samples)
+    sd_val <- sd(df$samples)
+    geo_mean <- exp(mean(log(df$samples))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(df$samples))) # Calculate geometric standard deviation
+    variance_val <- var(df$samples)
+    median_val <- median(df$samples)
+    result <- phase2_UTL(df$samples, input$OEL_phase2_UTL)
+    # Calculate percentiles
+    p25 <- quantile(df$samples, 0.25)
+    p75 <- quantile(df$samples, 0.75)
+    
+    # Create a data frame for descriptive statistics
+    stats_dfUTL <- data.frame(
+      Parameters = c("Compliance Result", "25th Percentile","Median","75th Percentile","Mean", "Standard Deviation", "Geometric Mean", 
+                     "Geometric Standard Deviation", "Variance"),
+      Value = c(result, p25, median_val, p75, mean_val, sd_val, geo_mean, geo_sd, variance_val)
+    )
+    
+    # Round numeric values to two decimal places
+    stats_dfUTL$Value <- ifelse(grepl("^\\d+\\.\\d+$", stats_dfUTL$Value),
+                               format(round(as.numeric(stats_dfUTL$Value), 2), nsmall = 2),
+                               stats_dfUTL$Value)
+    
+    
+    # Render table
+    output$descriptive_tableUTL <- renderTable({
+      stats_dfUTL <- stats_dfUTL  # Ensure stats_dfUTL is available in the local environment
+      stats_dfUTL  # Return the data frame
+    }, rownames = FALSE)
+    
     
     output$density_plot1 <- renderPlot({
       ggplot(df, aes(x = log(samples))) +
@@ -263,8 +370,8 @@ server <- function(input, output) {
       # Create a data frame with the results
       analysis_summary <- data.frame(
         "Parameter" = c("Overall Mean of SEG", 
-                        "Within-Worker Variance", 
-                        "Between-Worker Variance",
+                        "Within-Workers Variance", 
+                        "Between-Workers Variance",
                         "Probability of Exceedance (IE)",
                         "Compliance Result"),
         "Value" = c(M1, wwsd, bwsd, IE, compliance_result)
