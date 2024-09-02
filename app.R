@@ -172,10 +172,11 @@ server <- function(input, output) {
     #render boxplot
     output$boxplot_k3 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:3), Agent = samples)
-      bp <- boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
-                    ylim = c(0, max(samples) * 1.2))
-      abline(h = input$OEL_phase1EN2018_k3, col = "red")
-      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")
+      bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
+        geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
+        ggtitle("Workers Exposure") + 
+        geom_hline(yintercept = input$OEL_phase1EN2018_k3, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k3, label = "OEL*0.1", vjust = -1, color = "red")
       bp
     })
   })
@@ -218,10 +219,11 @@ server <- function(input, output) {
     
     output$boxplot_k4 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:4), Agent = samples)
-      bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
-                   ylim = c(0, max(samples) * 1.2))
-      abline(h = input$OEL_phase1EN2018_k3, col = "red")
-      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")
+      bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
+        geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
+        ggtitle("Workers Exposure") + 
+        geom_hline(yintercept = input$OEL_phase1EN2018_k4, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k4, label = "OEL*0.15", vjust = -1, color = "red")
       bp
     })
   })
@@ -264,10 +266,11 @@ server <- function(input, output) {
     #renderboxplot
     output$boxplot_k5 <- renderPlot({
       data <- data.frame(Measurements = paste("Worker", 1:5), Agent = samples)
-      bp = boxplot(Agent ~ Measurements, data = data, main = "Workers Exposure",
-                   ylim = c(0, max(samples) * 1.2))
-      abline(h = input$OEL_phase1EN2018_k3, col = "red")
-      text(3, input$OEL_phase1EN2018_k3, "OEL", pos = 1, col = "red")  # Add 'OEL' label
+      bp = bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
+        geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
+        ggtitle("Workers Exposure") + 
+        geom_hline(yintercept = input$OEL_phase1EN2018_k5, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k5, label = "OEL*0.2", vjust = -1, color = "red")
       bp
     })
   })
