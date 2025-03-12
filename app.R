@@ -1,12 +1,12 @@
 library(shiny)
 library(OHcomplianceStrategies)
 library(htmltools)
-library(shinyuieditor)
 library(shinythemes)
 library('tolerance')
 library('ggplot2')
 library(lme4)
 library(dplyr)
+library(devtools)
 
 # Define UI 
 ui <- fluidPage( 
@@ -84,8 +84,35 @@ ui <- fluidPage(
              )
     ),
     
+    #Section for Overexposure
+    tabPanel("EN689:1995 Phase 2: 95th and 99.9th percentile OEL Exceedance Calculation",
+             sidebarLayout(
+               sidebarPanel(
+                 column(width = 12,
+                        numericInput("OEL_phase2EN689.1995", "Occupational Exposure Limit:", value = 1),
+                        fileInput("samples_phase2EN689.1995", "Upload CSV file with workers exposure concentration"),
+                        actionButton("calculate_phase2EN689.1995", "Calculate Compliance")
+                 ),
+                 column(width = 8,
+                        h4("Dataset Example in csv"),  # Title for the image
+                        img(src = "exampledf.png", height = "300px", width = "50%")
+                 )
+               ),
+               mainPanel(
+                 h5("The normal distribution of the measurements is operated, and 99.9th percentile and 95th percentile values 
+                    are observed to assess the possible exceedance of the OEL. Compliance or Green Area 
+                    is achieved if the value of the 99,9th percentile is lower than the OEL, Uncertain Compliance or Orange Area
+                    is achieved if the value of the 99.9th percentile is lower than the OEL but the value of 95th percentile 
+                    is greater than the OEL.  Non Compliance or Red Area is achieved if the OEL is lower than the value of the 
+                    95th percentile."),
+                 tableOutput("descriptive_tableoverExp"),
+                 plotOutput("density_plot")
+               )
+             )
+    ),
+    
     # Section for Phase 2 UTL Calculation
-    tabPanel("EN689 Phase 2: Upper Tolerance Limit (UTL) Calculation",
+    tabPanel("EN689:2018 Phase 2: Upper Tolerance Limit (UTL) Calculation",
              sidebarLayout(
                sidebarPanel(
                  column(width = 12,
@@ -95,10 +122,13 @@ ui <- fluidPage(
                  ),
                  column(width = 8,
                         h4("Dataset Example in csv"),  # Title for the image
-                        img(src = "exampledf.jpg", height = "300px", width = "50%")
+                        img(src = "exampledf.png", height = "300px", width = "50%")
                  )
                ),
                mainPanel(
+                 h5("Upper tolerance limit value with 95 percent confidence interval and 70 percent confidence 
+                    level is the threshold probability parameter for OEL exceedance from a log-normal 
+                    distribution."),
                  tableOutput("descriptive_tableUTL"),
                  plotOutput("density_plot1")
                )
@@ -115,9 +145,11 @@ ui <- fluidPage(
              actionButton("calculate_individual", "Calculate Compliance")),
              column(width = 8,
                     h4("Dataset Example in csv"),  # Title for the image
-                    img(src = "exampledf_IC.jpg", height = "300px", width = "50%"))
+                    img(src = "exampledf_IC.png", height = "300px", width = "50%"))
              ),
              mainPanel(
+               h5("Individual Compliance is achieved when there is less than 20% probability that workers in a SEG have more than
+5% of exposure greater than the OEL."),
              textOutput("individual_result"),
              dataTableOutput("analysis_table"),
              plotOutput("density_plot2")
@@ -175,8 +207,8 @@ server <- function(input, output) {
       bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
         geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
         ggtitle("Workers Exposure") + 
-        geom_hline(yintercept = input$OEL_phase1EN2018_k3, color = "red",linetype = 'dashed', size= 1) +
-        annotate("text", x = 3, y = input$OEL_phase1EN2018_k3, label = "OEL*0.1", vjust = -1, color = "red")
+        geom_hline(yintercept = input$OEL_phase1EN2018_k3*0.1, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k3*0.1, label = "OEL*0.1", vjust = -1, color = "red")
       bp
     })
   })
@@ -222,8 +254,8 @@ server <- function(input, output) {
       bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
         geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
         ggtitle("Workers Exposure") + 
-        geom_hline(yintercept = input$OEL_phase1EN2018_k4, color = "red",linetype = 'dashed', size= 1) +
-        annotate("text", x = 3, y = input$OEL_phase1EN2018_k4, label = "OEL*0.15", vjust = -1, color = "red")
+        geom_hline(yintercept = input$OEL_phase1EN2018_k4*0.15, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k4*0.15, label = "OEL*0.15", vjust = -1, color = "red")
       bp
     })
   })
@@ -269,11 +301,71 @@ server <- function(input, output) {
       bp = bp <- ggplot(data = data, aes(x = Measurements, y = Agent)) +
         geom_bar(stat = "identity") +  # 'stat = "identity"' is needed to plot actual y values
         ggtitle("Workers Exposure") + 
-        geom_hline(yintercept = input$OEL_phase1EN2018_k5, color = "red",linetype = 'dashed', size= 1) +
-        annotate("text", x = 3, y = input$OEL_phase1EN2018_k5, label = "OEL*0.2", vjust = -1, color = "red")
+        geom_hline(yintercept = input$OEL_phase1EN2018_k5*0.2, color = "red",linetype = 'dashed', size= 1) +
+        annotate("text", x = 3, y = input$OEL_phase1EN2018_k5*0.2, label = "OEL*0.2", vjust = -1, color = "red")
       bp
     })
   })
+ 
+  # Phase 2 1995 - OverExposure
+  
+  observeEvent(input$calculate_phase2EN689.1995, {
+    req(input$samples_phase2EN689.1995)
+    df <- read.csv(input$samples_phase2EN689.1995$datapath, sep = ";")
+    
+    df <- data.frame(df)
+    df$measurements = as.numeric(df$measurements)
+    
+    result <- phase2EN689.1995(df$measurements, input$OEL_phase2EN689.1995)
+
+    # Calculate descriptive statistics
+    mean_val <- mean(df$measurements)
+    sd_val <- sd(df$measurements)
+    geo_mean <- exp(mean(log(df$measurements))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(df$measurements))) # Calculate geometric standard deviation
+    variance_val <- var(df$measurements)
+    median_val <- median(df$measurements)
+    number_measurements <- length(df$measurements)
+    # Calculate percentiles
+    p95 <- exp(qnorm(0.95, mean(log(df$measurements)), sd(log(df$measurements))))
+    p99.9 <- exp(qnorm(0.999, mean(log(df$measurements)), sd(log(df$measurements))))
+    
+    # Create a data frame for descriptive statistics
+    stats_dfoverExp <- data.frame(
+      Parameters = c("Compliance Result",'Number of Measurements', "Median","95th Percentile", "99.9th Percentile",
+                     "Mean", "Standard Deviation", "Geometric Mean", 
+                     "Geometric Standard Deviation"),
+      Value = c(result, number_measurements, median_val, p95, p99.9, 
+                mean_val, sd_val, geo_mean, geo_sd)
+    )
+    
+    # Round numeric values to two decimal places
+    stats_dfoverExp$Value <- ifelse(grepl("^\\d+\\.\\d+$", stats_dfoverExp$Value),
+                                format(round(as.numeric(stats_dfoverExp$Value), 2), nsmall = 2),
+                                stats_dfoverExp$Value)
+    
+    
+    # Render table
+    output$descriptive_tableoverExp <- renderTable({
+      stats_dfoverExp <- stats_dfoverExp  # Ensure stats_dfUTL is available in the local environment
+      stats_dfoverExp  # Return the data frame
+    }, rownames = FALSE)
+    
+    
+    output$density_plot <- renderPlot({
+      ggplot(df, aes(x = log(measurements))) +
+        geom_density(fill = "skyblue", color = "blue") +
+        geom_vline(xintercept = log(input$OEL_phase2EN689.1995), color = "red", linetype = "dashed", size = 1) +
+        annotate("text", x = log(input$OEL_phase2EN689.1995)-0.12, y = 0.9, label = "OEL", color = "red", size = 5) +
+        geom_vline(xintercept = log(p95), color = "green", linetype = "dashed", size = 1) +
+        annotate("text", x = log(p95)-0.12, y = 0.8, label = "p95", color = "green", size = 5) +
+             geom_vline(xintercept = log(p99.9), color = "blue", linetype = "dashed", size = 1) +
+               annotate("text", x = log(p99.9)-0.12, y = 0.7, label = "p99.9", color = "blue", size = 5) +
+      labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)") +
+        theme_minimal()
+    })
+  })
+  
   
   # Phase 2 UTL calculation
   observeEvent(input$calculate_phase2_UTL, {
@@ -281,27 +373,32 @@ server <- function(input, output) {
     df <- read.csv(input$samples_phase2_UTL$datapath, sep = ";")
     
     df <- data.frame(df)
-    df$samples = as.numeric(df$samples)
+    df$samples = as.numeric(df$measurements)
 
-    result <- phase2_UTL(df$samples, input$OEL_phase2_UTL)
+    result <- phase2_UTL(df$measurements, input$OEL_phase2_UTL)
+    TL <- normtol.int(log(df$measurements), alpha = 0.3, P = 0.95, side = 1)
+    UTL <- exp(TL$`1-sided.upper`)
     
     # Calculate descriptive statistics
-    mean_val <- mean(df$samples)
-    sd_val <- sd(df$samples)
-    geo_mean <- exp(mean(log(df$samples))) # Calculate geometric mean
-    geo_sd <- exp(sd(log(df$samples))) # Calculate geometric standard deviation
-    variance_val <- var(df$samples)
-    median_val <- median(df$samples)
+    mean_val <- mean(df$measurements)
+    sd_val <- sd(df$measurements)
+    geo_mean <- exp(mean(log(df$measurements))) # Calculate geometric mean
+    geo_sd <- exp(sd(log(df$measurements))) # Calculate geometric standard deviation
+    variance_val <- var(df$measurements)
+    median_val <- median(df$measurements)
+    UTL = UTL
     result <- phase2_UTL(df$samples, input$OEL_phase2_UTL)
+    number_measurements <- length(df$measurements)
     # Calculate percentiles
-    p25 <- quantile(df$samples, 0.25)
-    p75 <- quantile(df$samples, 0.75)
+    p25 <- quantile(df$measurements, 0.25)
+    p75 <- quantile(df$measurements, 0.75)
     
     # Create a data frame for descriptive statistics
     stats_dfUTL <- data.frame(
-      Parameters = c("Compliance Result", "25th Percentile","Median","75th Percentile","Mean", "Standard Deviation", "Geometric Mean", 
+      Parameters = c("Compliance Result",'Number of Measurements','UTLv',"25th Percentile","Median","75th Percentile","Mean", "Standard Deviation", "Geometric Mean", 
                      "Geometric Standard Deviation", "Variance"),
-      Value = c(result, p25, median_val, p75, mean_val, sd_val, geo_mean, geo_sd, variance_val)
+      Value = c(result, number_measurements, UTL, p25, median_val, p75, mean_val, sd_val, geo_mean, geo_sd, 
+                variance_val)
     )
     
     # Round numeric values to two decimal places
@@ -318,10 +415,12 @@ server <- function(input, output) {
     
     
     output$density_plot1 <- renderPlot({
-      ggplot(df, aes(x = log(samples))) +
+      ggplot(df, aes(x = log(measurements))) +
         geom_density(fill = "skyblue", color = "blue") +
         geom_vline(xintercept = log(input$OEL_phase2_UTL), color = "red", linetype = "dashed", size = 1) +
-        annotate("text", x = log(input$OEL_phase2_UTL)-0.15, y = 0.9, label = "OEL", color = "red", size = 8) +
+        annotate("text", x = log(input$OEL_phase2_UTL)-0.12, y = 0.9, label = "OEL", color = "red", size = 5) +
+        geom_vline(xintercept = log(UTL), color = "green", linetype = "dashed", size = 1) +
+        annotate("text", x = log(UTL)-0.12, y = 0.8, label = "UTL", color = "green", size = 5) +
         labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
         theme_minimal()
     })
@@ -343,46 +442,64 @@ server <- function(input, output) {
     compliance_result <- Individual_Compliance(
       seg = df, 
       workers = df$workers, 
-      samples = df$samples, 
+      measurements = df$measurements, 
       OEL = input$OEL_individual
     )
     
     # Calculate necessary parameters
-    M1 <- mean(df$samples)
-    t <- lmer(samples ~ 1 + (1 | workers), data = df)
+    M <- df %>% 
+      select(workers, measurements) %>% 
+      na.omit() %>% 
+      group_by(workers) %>% 
+      summarise(mean = mean(log(measurements)))
+    M1 <- mean(M$mean)
+    M2 <- exp(M1) #to show in the app
+    M3 <- formatC(M2, format = "f", digits = 2) # Format M3 with 2 decimal places
+    t <- lmer(as.numeric(measurements) ~ 1 + (1|workers),  
+              data = df)
     VCrandom <- VarCorr(t)
     vv <- as.data.frame(VCrandom)
     wwsd <- sqrt(vv$vcov[2])
-    bwsd <- sqrt(vv$vcov[1])
+    bwsd <- sqrt(vv$vcov[1]) 
+    percvar = bwsd/(bwsd+wwsd)
     H <- (log(input$OEL_individual) - (M1 + 1.645 * wwsd)) / bwsd
     IE <- 1 - pnorm(H)
-    
     M1 <- formatC(M1, format = "f", digits = 2) # Format M1 with 2 decimal places
-    wwsd <- formatC(wwsd, format = "f", digits = 2) # Format wwsd with 2 decimal places
-    bwsd <- formatC(bwsd, format = "f", digits = 2) # Format bwsd with 2 decimal places
-    H <- formatC(H, format = "f", digits = 2) # Format H with 2 decimal places
-    IE <- formatC(IE, format = "f", digits = 2) # Format IE with 2 decimal places
+    wwsd <- formatC(wwsd, format = "f", digits = 2)
+    WWGSD1 <- exp(as.numeric(wwsd))
+    WWGSD <- formatC(WWGSD1, format = "f", digits = 2) # Format WWGSD with 2 decimal places
+    bwsd <- formatC(bwsd, format = "f", digits = 2)
+    percvar <- paste0(formatC(percvar * 100, format = "f", digits = 2), "%")
+    IE <- paste0(formatC(IE * 100, format = "f", digits = 2), "%")
+    #some useful parameters
+    number_measurements <- length(df$measurements) 
+    median_value <- median(df$measurements)
+    p25 <- quantile(df$measurements, 0.25, na.rm = TRUE)[[1]]
+    p75 <- quantile(df$measurements, 0.75, na.rm = TRUE)[[1]]
     
     #DENSITY FUNCTIONS
     output$density_plot2 <- renderPlot({
-      ggplot(data = df, aes(x = log(samples))) +
-        geom_density(fill = "skyblue", color = "blue") +
-        geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
-        annotate("text", x = log(input$OEL_individual)-0.15, y = 0.9, label = "OEL", color = "red", size = 8) +
-        labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
-        theme_minimal()
+      output$density_plot2 <- renderPlot({
+        df = df %>% filter(measurements > 0) # Remove zero values
+  ggplot(data = df, aes(x = log(measurements))) +
+    geom_density(fill = "skyblue", color = "blue") +
+    geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
+    annotate("text", x = log(input$OEL_individual)-0.15, y = 0.9, label = "Threshold", color = "red", size = 8) +
+    labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
+    theme_minimal()
+})
     })
     
     # Render the table with analysis summary
     output$analysis_table <- renderDataTable({
       # Create a data frame with the results
       analysis_summary <- data.frame(
-        "Parameter" = c("Overall Mean of SEG", 
-                        "Within-Workers Variance", 
-                        "Between-Workers Variance",
-                        "Probability of Exceedance (IE)",
-                        "Compliance Result"),
-        "Value" = c(M1, wwsd, bwsd, IE, compliance_result)
+        "Parameter" = c("Number of measurements", "25th Percentile", "Median", "75th Percentile",
+                        "Overall Mean of SEG", "Within-Workers Variance", "Between-Workers Variance",
+                        "Percentage of Between-Workers Variance", "Within-Worker Geometric Standard Deviation",
+                        "Individual Exceedance", "Compliance Result"),
+        "Value" = c(number_measurements, p25, median_value, p75, M3, wwsd, bwsd, 
+                    percvar, WWGSD, IE, compliance_result)
       )
       
       # Return the data frame

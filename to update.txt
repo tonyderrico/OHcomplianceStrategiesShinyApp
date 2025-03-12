@@ -1,0 +1,3 @@
+devtools::install_github("tonyderrico/OHcomplianceStrategies", force = TRUE)
+
+rsconnect::deployApp()
