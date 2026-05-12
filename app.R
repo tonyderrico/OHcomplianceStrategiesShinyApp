@@ -7,6 +7,7 @@ library('ggplot2')
 library(lme4)
 library(dplyr)
 library(devtools)
+library(lattice)
 
 # Define UI 
 ui <- fluidPage( 
@@ -152,7 +153,9 @@ ui <- fluidPage(
 5% of exposure greater than the OEL."),
              textOutput("individual_result"),
              dataTableOutput("analysis_table"),
-             plotOutput("density_plot2")
+             plotOutput("density_plot2"),
+             plotOutput("vc_plot",height = "600px"),
+             plotOutput("dotplot", height = "600px")
     )
   )
 )
@@ -455,12 +458,15 @@ server <- function(input, output) {
     M1 <- mean(M$mean)
     M2 <- exp(M1) #to show in the app
     M3 <- formatC(M2, format = "f", digits = 2) # Format M3 with 2 decimal places
-    t <- lmer(as.numeric(measurements) ~ 1 + (1|workers),  
+    t <- lmer(as.numeric(log(measurements)) ~ 1 + (1|workers),  
               data = df)
     VCrandom <- VarCorr(t)
     vv <- as.data.frame(VCrandom)
     wwsd <- sqrt(vv$vcov[2])
-    bwsd <- sqrt(vv$vcov[1]) 
+    bwsd <- sqrt(vv$vcov[1])
+    vc_df <- data.frame(
+      Component = c("Between workers (σ²_b)", "Residual (σ²_w)"),
+      Variance  = c(bwsd, wwsd))
     percvar = bwsd/(bwsd+wwsd)
     H <- (log(input$OEL_individual) - (M1 + 1.645 * wwsd)) / bwsd
     IE <- 1 - pnorm(H)
@@ -470,7 +476,7 @@ server <- function(input, output) {
     WWGSD <- formatC(WWGSD1, format = "f", digits = 2) # Format WWGSD with 2 decimal places
     bwsd <- formatC(bwsd, format = "f", digits = 2)
     percvar <- paste0(formatC(percvar * 100, format = "f", digits = 2), "%")
-    IE <- paste0(formatC(IE * 100, format = "f", digits = 2), "%")
+    IE <- paste0(formatC(IE*100, format = "f", digits = 3), "%")
     #some useful parameters
     number_measurements <- length(df$measurements) 
     median_value <- median(df$measurements)
@@ -479,15 +485,89 @@ server <- function(input, output) {
     
     #DENSITY FUNCTIONS
     output$density_plot2 <- renderPlot({
-      output$density_plot2 <- renderPlot({
-        df = df %>% filter(measurements > 0) # Remove zero values
-  ggplot(data = df, aes(x = log(measurements))) +
-    geom_density(fill = "skyblue", color = "blue") +
-    geom_vline(xintercept = log(input$OEL_individual), color = "red", linetype = "dashed") +
-    annotate("text", x = log(input$OEL_individual)-0.15, y = 0.9, label = "Threshold", color = "red", size = 8) +
-    labs(title = "Density Plot of Exposure Concentrations", x = "Log(Concentrations)", y = "Density") +
-    theme_minimal()
-})
+      
+      df <- df %>% filter(measurements > 0)
+      M <- df %>%
+        select(workers, measurements) %>%
+        na.omit() %>%
+        group_by(workers) %>%
+        summarise(mean = mean(log(measurements)))
+      M1 <- mean(M$mean)
+      
+      # Extract between-worker and within-worker standard deviations
+      var_corr <- VarCorr(t)
+      bwsd <- as.numeric(attr(var_corr$workers, "stddev"))  # Between-worker SD
+      wwsd <- sqrt(attr(var_corr, "sc")^2)  # Within-worker SD
+      
+      # Calculate H and IE
+      H <- (log(input$OEL_individual) - (M1 + 1.645 * wwsd)) / bwsd
+      IE <- 1 - pnorm(H)
+      # Determine compliance label and color
+      comply_label <- ifelse(IE <= 0.20, "COMPLIANT", "NON-COMPLIANT")
+      comply_color <- ifelse(IE <= 0.20, "darkgreen", "red3")
+      
+      # Calculate density values for positioning
+      dens <- density(log(df$measurements))
+      max_dens_y <- max(dens$y)
+      
+      # Create the density plot
+      p <- ggplot(df, aes(x = log(measurements))) +
+        geom_density(fill = "skyblue", color = "blue") +
+        geom_vline(
+          xintercept = log(input$OEL_individual),
+          color = "red", linetype = "dashed", linewidth = 1
+        ) +
+        annotate(
+          "text",
+          x = log(input$OEL_individual) - 0.15,
+          y = max_dens_y * 0.9,
+          label = "OEL", color = "red", size = 6, hjust = 1
+        ) +
+        labs(
+          title = "Density Plot of Exposure Concentrations",
+          x = "Log(Concentrations)", y = "Density"
+        ) +
+        theme_minimal(base_size = 13)
+      
+      # Add compliance label in the top-right corner
+      p <- p +
+        annotate(
+          "label",
+          x = max(log(df$measurements)),
+          y = max_dens_y,
+          label = paste0(
+            comply_label, "\n",
+            "IE = ", round(IE * 100, 1), "% of workers\n",
+            "exceed OEL at 95th percentile"
+          ),
+          hjust = 1.05, vjust = 1.2,
+          fill = comply_color, color = "white",
+          size = 5, fontface = "bold"
+        )
+      
+      # Return the plot
+      p
+    })
+    
+    #Density function variance
+    output$vc_plot <- renderPlot({
+      ggplot(vc_df, aes(x = Component, y = Variance, fill = Component)) +
+        geom_col(width = 0.5) +
+        geom_text(aes(label = round(Variance, 3)), vjust = -0.5, size = 5) +
+        labs(
+          title = "Variance Component",
+          y = "Variance", x = ""
+        ) +
+        theme_minimal(base_size = 15) +
+        theme(legend.position = "none")
+    })
+    
+    #Dotplot
+    
+    output$dotplot <- renderPlot({
+      re  <- ranef(t, condVar = TRUE)
+      p   <- dotplot(re)
+      print(p)
     })
     
     # Render the table with analysis summary
