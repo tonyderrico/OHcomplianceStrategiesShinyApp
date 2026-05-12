@@ -8,6 +8,7 @@ library(lme4)
 library(dplyr)
 library(devtools)
 library(lattice)
+library('rsconnect')
 
 # Define UI 
 ui <- fluidPage( 
